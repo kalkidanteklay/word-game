@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="./style.css">
+    
+    <title>Word Game</title>
+</head>
+<body>
+    
+
+    <div class="container">
+        <div class="score_container">
+    <p id= "score" class="score">Score:</p>
+    <p id= "value" class="value">0</p>
+   
+</div>
+    <h2>Guess The Word</h2>
+    <h3>Use these letters to spell the word</h3>
+    <p id= "generated_text">
+        
+   
+    </p>
+    <div id = "input_boxes" class = "input_boxes">
+    
+    </div>
+    <p id="result_message"></p>
+    <audio id="correct_sound" src="../sound-effects/correct-6033.mp3"></audio>
+    <audio id="wrong-sound" src="../sound-effects/wrong-47985.mp3"></audio>
+    <button id="submit_button">Submit</button>
+    <div class="game-over-container" id="game-over-container">
+        <p id="winner-message"></p>
+        <button id = "play-again-button">Play Again</button>
+    </div>
+    
+    </div>
+    
+    <script src="./script.js"></script>
+</body>
+</html>
