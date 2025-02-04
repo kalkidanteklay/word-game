@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LeaderBoard</title>
+    <style>
+        body{
+            background-image: url(../images/wallpapers.jpg);
+            background-size: cover;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .container {
+           
+            border-radius: 25px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+           background-color: rgba(235, 177, 201, 0.8);
+            height: 500px;
+            width: 750px;
+            overflow-y: auto;
+        
+
+        }
+        h2{
+            color: whitesmoke;
+            text-align: center;
+            font-size: 36px;
+            font-weight: bold;
+            font-family: cursive;
+        }
+
+        p{
+            font-family: cursive;
+            font-size: 28px;
+            
+        }
+        .players{
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+        }
+        .images{
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            margin: 10px;
+            padding: 10px;
+        }
+        .wins{
+            margin: 10px;
+            padding: 10px; 
+        }
+        
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h2>LEADERBOARD</h2>
+        <div class="player-container" id="leaderboard">
+           
+        </div>
+    </div>
+
+    <script>
+        
+        async function fetchLeaderboard() {
+            try {
+                const response = await fetch('http://localhost:8080/leaderboard');
+                const data = await response.json();
+                renderLeaderboard(data.leaderboard);
+            } catch (error) {
+                console.error('Error fetching leaderboard:', error);
+            }
+        }
+
+       
+        function renderLeaderboard(leaderboard) {
+            const leaderboardContainer = document.getElementById('leaderboard');
+            leaderboardContainer.innerHTML = ''; 
+
+            leaderboard.forEach((player, index) => {
+                const playerDiv = document.createElement('div');
+                playerDiv.className = 'players';
+
+                playerDiv.innerHTML = `
+                    <image class="images" src="../images/profile-icon.jpg"></image>
+                    <p>${player.username}</p>
+                    <p class= "wins">${player.wins}</p>
+                `;
+
+                leaderboardContainer.appendChild(playerDiv);
+            });
+        }
+
+        // Fetch and render leaderboard when the page loads
+        document.addEventListener('DOMContentLoaded', fetchLeaderboard);
+    </script>
+</body>
+</html>
