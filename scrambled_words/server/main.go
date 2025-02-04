@@ -55,7 +55,7 @@ func main() {
 
 	// Add CORS middleware
 	r.Use(func(c *gin.Context) {
-		c.Writer.Header().Set("Access-Control-Allow-Origin", "http://127.0.0.1:5502")
+		c.Writer.Header().Set("Access-Control-Allow-Origin", "http://127.0.0.1:5503")
 		c.Writer.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
 		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type")
 		if c.Request.Method == "OPTIONS" {
@@ -66,7 +66,7 @@ func main() {
 	})
 
 	routes.RegisterRoutes(r)
-	db.InitRedis()
+	db.InitRedisCluster()
 	controllers.LoadGameState()
 
 	// Start the server
