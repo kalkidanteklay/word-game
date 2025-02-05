@@ -79,7 +79,9 @@ func JoinGame(c *gin.Context) {
 		"player":       player,
 		"joined_users": playerNames, // List of player names
 	})
+	log.Println("Saving updated game state to Redis...")
 	db.SaveGameState(&gameState)
+	log.Println("Game state saved to Redis.")
 }
 
 func CheckMenu(c *gin.Context) {

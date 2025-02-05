@@ -58,17 +58,6 @@ func getHealthyServer() string {
 
 // **WebSocket Forwarding Handler**
 func WebSocketHandler(c *gin.Context) {
-	// Find a healthy server
-	targetServer := getHealthyServer()
-	if targetServer == "" {
-		log.Println("No available game servers for WebSocket")
-		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "No game servers available"})
-		return
-	}
-
-	// Convert HTTP URL to WebSocket URL
-	targetWS := fmt.Sprintf("ws://%s/ws", targetServer[7:]) // http://localhost:8081 → ws://localhost:8081
-
 	// Upgrade client connection to WebSocket
 	clientConn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
@@ -77,35 +66,76 @@ func WebSocketHandler(c *gin.Context) {
 	}
 	defer clientConn.Close()
 
-	// Connect to the target game server WebSocket
-	serverConn, _, err := websocket.DefaultDialer.Dial(targetWS, nil)
-	if err != nil {
-		log.Println("Failed to connect to game server WebSocket:", err)
-		clientConn.WriteMessage(websocket.TextMessage, []byte("Error: Unable to connect to game server"))
-		return
-	}
-	defer serverConn.Close()
+	// Add client to the clients map
+	mu.Lock()
+	clients[clientConn] = true
+	mu.Unlock()
 
-	// **Forward messages from client → server**
-	go func() {
-		for {
-			messageType, msg, err := clientConn.ReadMessage()
-			if err != nil {
-				log.Println("Client WebSocket disconnected:", err)
-				return
-			}
-			serverConn.WriteMessage(messageType, msg)
-		}
+	// Remove client from the clients map when done
+	defer func() {
+		mu.Lock()
+		delete(clients, clientConn)
+		mu.Unlock()
 	}()
 
-	// **Forward messages from server → client**
+	// Reconnect loop
 	for {
-		messageType, msg, err := serverConn.ReadMessage()
-		if err != nil {
-			log.Println("Game server WebSocket disconnected:", err)
-			return
+		// Find a healthy server
+		targetServer := getHealthyServer()
+		if targetServer == "" {
+			log.Println("No available game servers for WebSocket")
+			clientConn.WriteMessage(websocket.TextMessage, []byte("Error: No game servers available. Retrying..."))
+			time.Sleep(5 * time.Second) // Wait before retrying
+			continue
 		}
-		clientConn.WriteMessage(messageType, msg)
+
+		// Convert HTTP URL to WebSocket URL
+		targetWS := fmt.Sprintf("ws://%s/ws", targetServer[7:]) // http://localhost:8081 → ws://localhost:8081
+
+		// Connect to the target game server WebSocket
+		serverConn, _, err := websocket.DefaultDialer.Dial(targetWS, nil)
+		if err != nil {
+			log.Println("Failed to connect to game server WebSocket:", err)
+			clientConn.WriteMessage(websocket.TextMessage, []byte("Error: Unable to connect to game server. Retrying..."))
+			time.Sleep(5 * time.Second) // Wait before retrying
+			continue
+		}
+		defer serverConn.Close()
+
+		// Notify the client that the connection is established
+		clientConn.WriteMessage(websocket.TextMessage, []byte("Connected to game server: "+targetServer))
+
+		// Forward messages from client → server
+		go func() {
+			for {
+				messageType, msg, err := clientConn.ReadMessage()
+				if err != nil {
+					log.Println("Client WebSocket disconnected:", err)
+					return
+				}
+				if err := serverConn.WriteMessage(messageType, msg); err != nil {
+					log.Println("Failed to forward message to server:", err)
+					return
+				}
+			}
+		}()
+
+		// Forward messages from server → client
+		for {
+			messageType, msg, err := serverConn.ReadMessage()
+			if err != nil {
+				log.Println("Game server WebSocket disconnected:", err)
+				clientConn.WriteMessage(websocket.TextMessage, []byte("Game server disconnected. Reconnecting..."))
+				break // Break the loop to reconnect
+			}
+			if err := clientConn.WriteMessage(messageType, msg); err != nil {
+				log.Println("Failed to forward message to client:", err)
+				return
+			}
+		}
+
+		// Close the server connection before reconnecting
+		serverConn.Close()
 	}
 }
 
@@ -190,7 +220,7 @@ func main() {
 
 	// **4️⃣ CORS Middleware**
 	r.Use(func(c *gin.Context) {
-		c.Writer.Header().Set("Access-Control-Allow-Origin", "http://localhost:5500")
+		c.Writer.Header().Set("Access-Control-Allow-Origin", "http://127.0.0.1:5501")
 		c.Writer.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
 		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type")
 		if c.Request.Method == "OPTIONS" {

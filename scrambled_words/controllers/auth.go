@@ -10,6 +10,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -44,6 +45,7 @@ func Signup(c *gin.Context) {
 		return
 	}
 	user.Password = string(hashedPassword)
+	user.ID = primitive.NewObjectID()
 
 	// Save the user
 	_, err = collection.InsertOne(ctx, user)
