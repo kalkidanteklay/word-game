@@ -54,7 +54,7 @@ func HandleWebSocket(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 
-			shared.Players[conn] = shared.Player{ID: user.ID, Name: username, Score: 0}
+			shared.Players[conn] = shared.Player{ID: user.ID, Name: username, Score: user.Score}
 			player := models.Player{
 				Name:  shared.Players[conn].Name,
 				Score: shared.Players[conn].Score,

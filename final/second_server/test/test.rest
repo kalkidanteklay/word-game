@@ -1,0 +1,19 @@
+### Test CheckMenu (Valid Player ID)
+POST http://localhost:8081/menu
+Content-Type: application/json
+
+{
+  "player_id": "6794d69bc1b5b71a3a2f1e1a",
+  "type": "new"
+}
+
+
+### Test StartGame (Valid Player ID)
+POST http://localhost:8081/start
+Content-Type: application/json
+
+{
+  "player_id": "6794d69bc1b5b71a3a2f1e1a"
+}
+
+

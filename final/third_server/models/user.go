@@ -10,4 +10,5 @@ type User struct {
 	Email    string             `json:"email" bson:"email"`
 	Password string             `json:"password" bson:"password"`
 	Wins     int                `json:"wins" bson:"wins"`
+	Score    int                `json:"score" bson:"score"`
 }

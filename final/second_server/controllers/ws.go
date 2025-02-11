@@ -19,7 +19,6 @@ var upgrader = websocket.Upgrader{
 	},
 }
 
-// HandleWebSocket handles WebSocket connections
 func HandleWebSocket(w http.ResponseWriter, r *http.Request) {
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
@@ -28,14 +27,12 @@ func HandleWebSocket(w http.ResponseWriter, r *http.Request) {
 	}
 	defer conn.Close()
 
-	// Register client
 	shared.Mu.Lock()
 	shared.Clients[conn] = true
 	shared.Mu.Unlock()
 
 	log.Printf("New WebSocket connection. Total clients: %d\n", len(shared.Clients))
 
-	// Listen for messages
 	for {
 		var msg shared.Message
 		err := conn.ReadJSON(&msg)
@@ -44,7 +41,6 @@ func HandleWebSocket(w http.ResponseWriter, r *http.Request) {
 			break
 		}
 
-		// Handle the "register" message
 		if msg.Type == "register" {
 			shared.Mu.Lock()
 			username := msg.Payload.(map[string]interface{})["username"].(string)
@@ -58,42 +54,36 @@ func HandleWebSocket(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 
-			shared.Players[conn] = shared.Player{ID: user.ID, Name: username, Score: 0}
+			shared.Players[conn] = shared.Player{ID: user.ID, Name: username, Score: user.Score}
 			player := models.Player{
 				Name:  shared.Players[conn].Name,
 				Score: shared.Players[conn].Score,
 			}
 
-			// Update the game state with the new player
 			gameState.Players = append(gameState.Players, player)
 			shared.Mu.Unlock()
 
-			// Broadcast updated player list
 			broadcastPlayerList()
 		}
 
-		// Example: Broadcast the received message
 		shared.Broadcast <- msg
 	}
 
-	// Unregister client
 	shared.Mu.Lock()
 	delete(shared.Clients, conn)
 	delete(shared.Players, conn)
 	shared.Mu.Unlock()
 	log.Printf("WebSocket disconnected. Total clients: %d\n", len(shared.Clients))
 
-	// Broadcast updated player list
 	broadcastPlayerList()
 }
 
-// Helper function to broadcast the list of connected players and their scores
 func broadcastPlayerList() {
 	log.Println("Acquiring lock in broadcastPlayerList()")
-	shared.Mu.Lock() // Lock the mutex
+	shared.Mu.Lock()
 	defer func() {
 		log.Println("Releasing lock in broadcastPlayerList()")
-		shared.Mu.Unlock() // Ensure unlock only happens once
+		shared.Mu.Unlock()
 	}()
 
 	defer func() {
